@@ -1,9 +1,12 @@
 "use client";
 import { useEffect, useRef, memo } from "react";
 import { createChart, IChartApi, ISeriesApi, CandlestickData, LineData } from "lightweight-charts";
+// This is already correct if you use the formatChartData helper above
+seriesRef.current?.setData(data);
+import { Time, CandlestickData } from "lightweight-charts"; // ← Ensure Time is imported
 
 interface ChartProps {
-  data: CandlestickData[];
+  data: CandlestickData[]; // ← Use library type directly
   currentPrice: number;
   signal: "BUY" | "SELL" | "HOLD";
   levels?: { entry: number; stop_loss: number; take_profit: number };
