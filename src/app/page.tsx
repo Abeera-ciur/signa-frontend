@@ -4,6 +4,7 @@ import { connectWS, SignalData } from "@/lib/ws";
 import Sidebar from "@/components/Sidebar";
 import TradingChart from "@/components/Chart";
 import SignalPanel from "@/components/SignalPanel";
+import { Time } from "lightweight-charts"; // ← ADD THIS IMPORT
 
 export default function Home() {
   const [wsData, setWsData] = useState<SignalData | null>(null);
@@ -14,21 +15,32 @@ export default function Home() {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:7860/ws";
     connectWS(wsUrl, (data: SignalData) => {
       setWsData(data);
-      // Update UI state if config changed
-      if (data.type === "config_updated") {
-        // Could add toast notification here
-      }
     });
-
-    return () => {
-      // Cleanup on unmount handled in ws.ts
-    };
+    return () => {};
   }, []);
+
+  // Helper: Convert backend candle format to lightweight-charts format
+  const formatChartData = (chart: any[]) => {
+    return chart.map(c => ({
+      time: c.time as Time, // ← CAST TO Time TYPE
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close
+    }));
+  };
 
   return (
     <main className="h-screen flex bg-bg overflow-hidden">
       {/* Left Sidebar */}
-      <Sidebar currentSymbol={symbol} currentInterval={interval} />
+      <Sidebar 
+        currentSymbol={symbol} 
+        currentInterval={interval}
+        onConfig={(s: string, i: string) => {
+          setSymbol(s);
+          setInterval(i);
+        }}
+      />
 
       {/* Center: Chart Area */}
       <section className="flex-1 flex flex-col p-3 gap-3">
@@ -45,15 +57,9 @@ export default function Home() {
 
         {/* Main Chart */}
         <div className="flex-1 bg-panel/30 rounded-xl p-1 border border-border neon-g">
-          {wsData?.chart ? (
+          {wsData?.chart && wsData.chart.length > 0 ? (
             <TradingChart 
-              data={wsData.chart.map(c => ({
-                time: c.time,
-                open: c.open,
-                high: c.high,
-                low: c.low,
-                close: c.close
-              }))}
+              data={formatChartData(wsData.chart)} // ← USE FORMATTED DATA
               currentPrice={wsData.price}
               signal={wsData.signal}
               levels={{
